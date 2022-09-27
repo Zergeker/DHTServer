@@ -3,7 +3,8 @@
 
 class Record {
 public:
-	Record(std::string inputKey, std::string inputValue);
+	Record(std::string inputKey, std::string inputValue, int keySpaceSize);
 	std::string value;
-	std::string key;
+	std::string originalKey;
+	unsigned long long key;
 };

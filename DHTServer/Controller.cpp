@@ -9,11 +9,12 @@ using namespace web::http;
 using namespace web::http::experimental::listener;
 using namespace concurrency::streams;
 
-Controller::Controller(std::string hostname)
+Controller::Controller(std::string hostname, int inputKeySpace)
 {
 	std::wstring widestr = std::wstring(hostname.begin(), hostname.end());
 	storageKeyListener = http_listener((widestr + L"/storage"));
 	neighborsListener = http_listener((widestr + L"/neighbors"));
+	keySpace = inputKeySpace;
 };
 
 void Controller::Start(Node* node)
@@ -46,23 +47,47 @@ void Controller::Start(Node* node)
 void Controller::Wait(Node* node)
 {
 	int starterRank[1];
-	MPI_Request requestKey, requestEndRank;
+	MPI_Request requestKey, requestEndRank, putKey, putOrigKey, putValue;
 	bool flag = 1;
 	int predRank = *node->GetPredecessorRank();
 	int succRank = *node->GetSuccessorRank();
-	char valueBuf[100];
+	unsigned long long keyGetBuf[1];
+	char origKeyBuf[100];
+	char putValueBuf[100];
 	char foundValue[100];
+	int probeFlagGet = 0;
+	int probeFlagPut = 0;
 
 	while (true)
 	{
-		MPI_Irecv(valueBuf, 100, MPI_CHAR, predRank, MPI_ANY_TAG, MPI_COMM_WORLD, &requestKey);
-		MPI_Wait(&requestKey, MPI_STATUS_IGNORE);
+		MPI_Iprobe(MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &probeFlagGet, MPI_STATUSES_IGNORE);
+		if (probeFlagGet == 1)
+		{
+			MPI_Irecv(keyGetBuf, 1, MPI_UNSIGNED_LONG_LONG, predRank, 1, MPI_COMM_WORLD, &requestKey);
+			MPI_Wait(&requestKey, MPI_STATUS_IGNORE);
 
-		MPI_Irecv(starterRank, 1, MPI_INT, predRank, MPI_ANY_TAG, MPI_COMM_WORLD, &requestEndRank);
-		MPI_Wait(&requestEndRank, MPI_STATUS_IGNORE);
+			MPI_Irecv(starterRank, 1, MPI_INT, predRank, 1, MPI_COMM_WORLD, &requestEndRank);
+			MPI_Wait(&requestEndRank, MPI_STATUS_IGNORE);
 
-		strcpy(foundValue, (*node).FindRecord(valueBuf, *starterRank).c_str());
-		MPI_Isend(foundValue, 100, MPI_CHAR, predRank, 0, MPI_COMM_WORLD, &requestKey);
+			strcpy(foundValue, (*node).FindRecord(keyGetBuf[0], *starterRank).c_str());
+			MPI_Isend(foundValue, 100, MPI_CHAR, predRank, 1, MPI_COMM_WORLD, &requestKey);
+
+			probeFlagGet = 0;
+		}
+
+		MPI_Iprobe(MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &probeFlagPut, MPI_STATUSES_IGNORE);
+		if (probeFlagPut == 1)
+		{
+			MPI_Irecv(origKeyBuf, 100, MPI_CHAR, predRank, 2, MPI_COMM_WORLD, &putOrigKey);
+			MPI_Wait(&putOrigKey, MPI_STATUS_IGNORE);
+
+			MPI_Irecv(putValueBuf, 100, MPI_CHAR, predRank, 2, MPI_COMM_WORLD, &putValue);
+			MPI_Wait(&putValue, MPI_STATUS_IGNORE);
+
+			(*node).AddRecord(origKeyBuf, putValueBuf);
+
+			probeFlagPut = 0;
+		}
 	}
 }
 
@@ -75,7 +100,7 @@ void Controller::Stop()
 void Controller::getValue(http_request request, Node* node)
 {
 	std::string input = utility::conversions::to_utf8string(request.relative_uri().to_string()).erase(0, 1);
-	request.reply(200, node->FindRecord(SHA1Encrypt(input), node->rank));
+	request.reply(200, node->FindRecord(SHA1Encrypt(input, keySpace), node->rank));
 };
 
 void Controller::getNeighbors(http_request request, Node* node)
@@ -91,6 +116,6 @@ void Controller::putStorageKey(http_request request, Node* node)
 	std::string input = utility::conversions::to_utf8string(request.relative_uri().to_string()).erase(0, 1);
 	stringstreambuf buffer;
 	request.body().read_to_end(buffer).get();
-	node->AddRecord(new Record(input, buffer.collection()));
-	request.reply(200, buffer.collection());
+	node->AddRecord(input, buffer.collection());
+	request.reply(200, "Success!");
 }

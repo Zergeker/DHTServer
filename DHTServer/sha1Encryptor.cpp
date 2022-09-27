@@ -4,9 +4,8 @@
 #include <openssl/sha.h>
 
 
-std::string SHA1Encrypt(std::string text)
+unsigned long long SHA1Encrypt(std::string text, int keySpace)
 {
-    const int keyspace_size = 160;
     unsigned char hash[SHA_DIGEST_LENGTH];
 
     char* x = new char[text.length() + 1];
@@ -24,9 +23,7 @@ std::string SHA1Encrypt(std::string text)
     for (int i = 0; i < sizeof(mdString); ++i)
         binaryString+= std::bitset<8>(mdString[i]).to_string();
 
-    unsigned long long hashKey = std::stoull(binaryString.substr(0, 64), nullptr, 2) % keyspace_size;
+    unsigned long long hashKey = std::stoull(binaryString.substr(0, 64), nullptr, 2) % keySpace;
 
-    std::cout << hashKey << std::endl;
-
-    return std::string(mdString);
+    return hashKey;
 };

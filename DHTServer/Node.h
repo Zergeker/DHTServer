@@ -6,13 +6,16 @@
 
 class Node {
 public:
-	void AddRecord(Record* record);
+	void AddRecord(std::string inputKey, std::string inputValue);
 	void ShowContents();
-	std::string FindRecord(std::string inputKey, int starterRank);
+	std::string FindRecord(unsigned long long inputKey, int starterRank);
 	int* GetSuccessorRank();
 	int* GetPredecessorRank();
 	int rank;
-	Node(int rank, int nodesCount);
+	int nodeKey;
+	int keySpace_size;
+	int successorNodeKey;
+	Node(int rank, int nodesCount, int keySpace);
 private:
 	int successorRank;
 	int predecessorRank;

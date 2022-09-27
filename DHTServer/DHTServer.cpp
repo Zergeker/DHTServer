@@ -23,15 +23,17 @@ using namespace web::http::experimental::listener;
 int main(int argc, char** argv)
 {
     int nproc;
-    int myrank; 
+    int myrank;
+
+    int keyspace = 128;
     
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
-    Controller controller(("http://localhost:666" + to_string(myrank)));
+    Controller controller(("http://localhost:666" + to_string(myrank)), 128);
 
-    Node node(myrank, nproc);
+    Node node(myrank, nproc, keyspace);
 
     controller.Start(&node);
 
