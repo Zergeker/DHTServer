@@ -8,7 +8,7 @@ class Node {
 public:
 	void AddRecord(std::string inputKey, std::string inputValue);
 	void ShowContents();
-	std::string FindRecord(unsigned long long inputKey, int starterRank);
+	std::string FindRecord(unsigned long long inputKey, std::string inputOrigKey, int starterRank);
 	int* GetSuccessorRank();
 	int* GetPredecessorRank();
 	int rank;

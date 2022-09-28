@@ -14,11 +14,12 @@ using namespace web::http::experimental::listener;
 class Controller
 {
 public:
-	Controller(std::string hostname, int inputKeySpace);
+	Controller(std::string hostname, int inputPort, int inputKeySpace);
 	void Start(Node* node);
 	void Wait(Node* node);
 	void Stop();
 private:
+	int port;
 	int keySpace;
 	char processorName[MPI_MAX_PROCESSOR_NAME];
 	char successorName[MPI_MAX_PROCESSOR_NAME];

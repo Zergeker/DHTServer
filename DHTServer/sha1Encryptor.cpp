@@ -2,6 +2,7 @@
 #include <sstream>
 #include <bitset>
 #include <openssl/sha.h>
+#include <cstring>
 
 
 unsigned long long SHA1Encrypt(std::string text, int keySpace)

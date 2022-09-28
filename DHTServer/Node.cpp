@@ -1,5 +1,6 @@
 #include "Node.h"
 #include "sha1Encryptor.h"
+#include <cstring>
 
 Node::Node(int i, int nodesCount, int keySpace)
 {
@@ -37,7 +38,6 @@ void Node::AddRecord(std::string inputKey, std::string inputValue)
 {
 	Record* rec = new Record(inputKey, inputValue, keySpace_size);
 	unsigned long long hashKey = SHA1Encrypt(inputKey, keySpace_size);
-	std::cout << hashKey << std::endl;
 	
 	if (hashKey >= nodeKey && successorRank != 0 && hashKey < successorNodeKey)
 	{
@@ -65,16 +65,15 @@ void Node::AddRecord(std::string inputKey, std::string inputValue)
 	}
 };
 
-std::string Node::FindRecord(unsigned long long inputKey, int starterRank)
+std::string Node::FindRecord(unsigned long long inputKey, std::string inputOrigKey, int starterRank)
 {
 	std::list<Record*>::iterator it;
-
 	for (it = records.begin(); it!=records.end(); ++it)
 	{
-		if ((*it)->key == inputKey)
+		if ((*it)->originalKey == inputOrigKey)
 		{
-			std::cout << rank << std::endl;
-			return (*it)->value;
+			if ((*it)->originalKey == inputOrigKey)
+				return (*it)->value;
 		}
 	}
 
@@ -87,11 +86,14 @@ std::string Node::FindRecord(unsigned long long inputKey, int starterRank)
 		int intBuf[1] = { starterRank };
 		unsigned long long keyBuf[1] = {inputKey};
 		char valueBuf[100];
+		char origKey[100];
+		MPI_Request request, request2, request3;
 
-		MPI_Request request, request2;
+		strcpy(origKey, inputOrigKey.c_str());
 
 		MPI_Isend(keyBuf, 1, MPI_UNSIGNED_LONG_LONG, successorRank, 1, MPI_COMM_WORLD, &request);
-		MPI_Isend(intBuf, 1, MPI_INT, successorRank, 1, MPI_COMM_WORLD, &request2);
+		MPI_Isend(origKey, 100, MPI_CHAR, successorRank, 1, MPI_COMM_WORLD, &request2);
+		MPI_Isend(intBuf, 1, MPI_INT, successorRank, 1, MPI_COMM_WORLD, &request3);
 
 		MPI_Irecv(valueBuf, 100, MPI_CHAR, successorRank, 1, MPI_COMM_WORLD, &request);
 		MPI_Wait(&request, MPI_STATUS_IGNORE);
