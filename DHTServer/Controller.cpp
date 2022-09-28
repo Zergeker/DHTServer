@@ -11,9 +11,10 @@ using namespace concurrency::streams;
 
 Controller::Controller(std::string hostname, int inputPort, int inputKeySpace)
 {
-	std::wstring widestr = std::wstring(hostname.begin(), hostname.end());
-	storageKeyListener = http_listener((widestr + L"/storage"));
-	neighborsListener = http_listener((widestr + L"/neighbors"));
+	utility::string_t storageKeyListenerStr = utility::conversions::to_string_t(hostname + "/storage");
+	utility::string_t neighborsListenerStr = utility::conversions::to_string_t(hostname + "/neighbors");
+	storageKeyListener = http_listener(storageKeyListenerStr);
+	neighborsListener = http_listener(neighborsListenerStr);
 	keySpace = inputKeySpace;
 	port = inputPort;
 };
@@ -114,8 +115,8 @@ void Controller::getValue(http_request request, Node* node)
 void Controller::getNeighbors(http_request request, Node* node)
 {
 	auto res = web::json::value::array();
-	res[0] = json::value::string(utility::conversions::to_utf16string(std::string(predecessorName)+ ":" + std::to_string(port)));
-	res[1] = json::value::string(utility::conversions::to_utf16string(std::string(successorName) + ":" + std::to_string(port)));
+	res[0] = json::value::string(utility::conversions::to_string_t(std::string(predecessorName)+ ":" + std::to_string(port)));
+	res[1] = json::value::string(utility::conversions::to_string_t(std::string(successorName) + ":" + std::to_string(port)));
 	request.reply(200, res);
 };
 
